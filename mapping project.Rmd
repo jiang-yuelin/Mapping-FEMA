@@ -1,0 +1,206 @@
+---
+title: "Mapping Assignment"
+author: "MA 615 Group 3: Bai,Ziyi;Jiang,Yuelin;Huang,Zijie;Zeng,Yuxin (Some of our code was inspired by Meng,Chenghao"
+date: "2020/10/25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse","hurricaneexposuredata","drat","maps","tmap","sf","viridis","sp")
+```
+
+## 1. Data Cleaning
+
+```{r}
+# Extract data for the mapping
+addRepo("geanders")
+data("hurr_tracks")
+data("rain")
+head(hurr_tracks)
+head(rain)
+```
+
+```{r}
+## filter target data
+TrackFloyd <- hurr_tracks %>% filter(storm_id=="Floyd-1999")
+TrackAllison <- hurr_tracks %>% filter(storm_id=="Allison-2001")
+```
+
+```{r message=FALSE, warning=FALSE}
+## initial dataset 
+RainFloyd1 <- rain %>% 
+  filter(storm_id=="Floyd-1999") %>% 
+  group_by(fips,storm_id) %>% 
+  summarise(sum_precip=sum(precip))
+
+RainAllison1 <- rain %>%
+  filter(storm_id=="Allison-2001") %>%
+  group_by(fips,storm_id) %>%
+  summarise(sum_precip=sum(precip))
+```
+
+```{r}
+## Make adjustments on fips
+CountyFips <- county.fips
+CountyFips$fips <- as.character(CountyFips$fips)
+# if fips looks like "1001" rather than "01001", transformation is needed
+CountyFips$fips <- str_pad(CountyFips$fips,5,side = "left",pad = "0")
+```
+
+```{r}
+## further adjustment on data
+RainFloyd2 <- merge(RainFloyd1,CountyFips,by="fips") %>% separate(polyname, into= c("region","subregion"),sep= ",")
+RainAllison2 <- merge(RainAllison1, CountyFips, by="fips") %>% separate(polyname, into=c("region","subregion"),sep=",")
+```
+
+
+```{r}
+## select states 
+StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
+MainStates <- map_data("county",StatesInt)
+```
+
+
+```{r}
+##final dataset
+## Floyd-1999
+RainFloyd <- merge(MainStates,RainFloyd2,by=c("region","subregion"))
+RainFloyd[RainFloyd==0.0] <- 0
+# Make cut
+RainFloyd$rain_cut <- cut(RainFloyd$sum_precip,breaks=c(0,25,50,75,100,125,150,175,200,225))
+
+## Allison-2001
+RainAllison <- merge(MainStates,RainAllison2,by=c("region","subregion"))
+RainAllison[RainAllison==0.0] <- 0
+# Make cut
+RainAllison$rain_cut <- ifelse(RainAllison$sum_precip>175,"Exposed","Unexposed")
+```
+
+
+## 2. Using ggplot
+### 2.1 Floyd-1999
+
+```{r warning=FALSE}
+RainFloydPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white") + 
+  
+  geom_polygon(data=RainFloyd,aes(x=long,y=lat,group=group,fill=rain_cut),colour="transparent")+
+  
+  geom_path(data=TrackFloyd,aes(longitude, latitude),color="orange")+
+  
+  xlim(min(MainStates$long),max(MainStates$long)) + 
+  ylim(min(MainStates$lat),max(MainStates$lat))
+```
+
+```{r message=FALSE, warning=FALSE}
+## Change the title of the legend
+RainFloydPlot + 
+  labs(fill="Rainfall(mm)") + 
+  scale_fill_brewer(palette="Blues") +
+  ggtitle("Floyd-1999") + 
+  scale_fill_brewer(palette="Blues") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### 2.2 Allison-2001
+
+```{r}
+RainAllisonPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white") + 
+  
+  geom_polygon(data=RainAllison,aes(x=long,y=lat,group=group,fill=rain_cut),colour="transparent")+
+  
+  geom_path(data=TrackAllison,aes(longitude, latitude),color="yellow")+
+  
+  xlim(min(MainStates$long),max(MainStates$long)) + 
+  ylim(min(MainStates$lat),max(MainStates$lat))
+```
+
+```{r}
+## Change the title of the legend
+RainAllisonPlot + 
+  labs(fill="Rain > 175mm") +  
+  xlab("Longitude") + ylab("Latitude") +
+  ggtitle("Allison-2001") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 3. Using tmap
+
+### 3.1 Floyd-1999
+#### 3.1.1 Data Organising 
+```{r}
+## Transfer data into spatial version
+tMap <- st_as_sf(map("county",StatesInt,plot=F,fill=T))
+
+## Transfer RainFloyd into spatial format 
+tRainFloyd1 <- RainFloyd %>% 
+  select(region,subregion,rain_cut) %>% 
+  mutate(ID=str_c(region,subregion,sep = ",")) %>% 
+  select(ID,rain_cut) %>% 
+  rename(`Rainfall(mm)`=rain_cut)
+
+tRainFloyd <- left_join(tMap,tRainFloyd1,by="ID")
+
+## Transfer TrackFloyd into spatial format
+tTrackFloyd=cbind(TrackFloyd$longitude,TrackFloyd$latitude)%>%
+  Line() %>% Lines(ID='Floyd-1999') %>%
+  list() %>% SpatialLines()
+```
+
+#### 3.1.2 Making map
+```{r}
+tRainFloydPlot <- 
+tm_shape(tRainFloyd)+
+  tm_polygons(border.col="white",lwd=0.1,colorNA=NULL,
+              col='Rainfall(mm)',style="cont",
+              title="Rainfall(mm)",
+              palette=cividis(n=7,direction=-1))+
+  tm_shape(tTrackFloyd) +
+  tm_lines(col='red')
+
+# Add title
+tRainFloydPlot + 
+  tm_layout(main.title='Floyd-1999',
+            main.title.position="center")
+```
+
+
+
+### 3.2 Allison-2001
+
+#### 3.2.1 Data Organising
+```{r}
+## Transfer RainAllison into spatial format
+tRainAllison1 <- RainAllison %>% 
+  select(region,subregion,rain_cut) %>% 
+  mutate(ID=str_c(region,subregion,sep = ",")) %>% 
+  select(ID,rain_cut) %>% 
+  rename(`Rainfall > 175mm`=rain_cut)
+
+tRainAllison <- left_join(tMap,tRainAllison1,by="ID")
+
+# Transfer TrackFloyd into spatial format
+tTrackAllison=cbind(TrackAllison$longitude,TrackAllison$latitude) %>%
+  Line() %>% Lines(ID='Floyd-1999') %>%
+  list() %>% SpatialLines()
+```
+
+#### 3.2.2 Making map
+```{r}
+tRainAllisonPlot <- 
+tm_shape(tRainAllison)+
+  tm_polygons(border.col="white",lwd=0.1,colorNA=NULL,
+              col='Rainfall > 175mm',style="cont",
+              title="Rainfall > 175mm",
+              palette=plasma(n=2,direction=-1))+
+  tm_shape(tTrackAllison) +
+  tm_lines(col='red')
+
+# Add title
+tRainAllisonPlot + 
+  tm_layout(main.title='Allison-2001',
+            main.title.position="center")
+```
+
