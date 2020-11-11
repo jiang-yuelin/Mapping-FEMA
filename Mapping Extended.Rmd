@@ -62,23 +62,35 @@ MainStates <- map_data("county", StatesInt)
 harvey <- countyHurr %>% dplyr:: filter((date >= "2017-08-23") & (date <= "2017-09-15"))
 
 # Hurricane Sandy : October 27, 2012 - November 8, 2012
-sandyFunds <- countyHurr %>% dplyr:: filter((date >= "2012-10-27") & (date <= "2012-11-08"))
+sandy <- countyHurr %>% dplyr:: filter((date >= "2012-10-27") & (date <= "2012-11-08"))
 ```
 
 ```{r}
 # add locations on fund dataframe
 
 harvey <- merge(MainStates,harvey,by=c("region","subregion"))
-
+sandy <- merge(MainStates,sandy,by=c("region","subregion"))
 ```
 
-### Make map plots
+### Make map plots of Hurricane Harvey's received federal funds by county
 ```{r}
 harveyPlot <- ggplot() + 
   geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
-  geom_polygon(data=harvey, aes(x = long, y = lat, group = group, fill = federalShare), color = "transparent")
+  geom_polygon(data=harvey, aes(x = long, y = lat, group = group, fill = federalShare))+
+  labs(fill="Federal Aid Amount (USD)") + 
+  ggtitle("Harvey-2017") +
+  theme(plot.title = element_text(hjust = 0.5))
 
-
+harveyPlot
+```
+### Make map plots of Hurricane Sandy's received federal funds by county
+```{r}
+harveyPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
+  geom_polygon(data=harvey, aes(x = long, y = lat, group = group, fill = federalShare), color = "transparent")+
+  labs(fill="Federal Aid Amount (USD)") + 
+  ggtitle("Harvey-2017") +
+  theme(plot.title = element_text(hjust = 0.5))
 
 harveyPlot
 ```
