@@ -8,21 +8,66 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse",
+               "magrittr",
+               "hurricaneexposuredata",
+               "drat",
+               "maps",
+               "tmap",
+               "sf",
+               "viridis",
+               "sp",
+               "kableExtra")
 ```
 
 ## Data Cleaning
 
+## prepare FEMA funds data
+```{r, echo=FALSE, message=FALSE}
 
-```{r cars}
-summary(cars)
+fema <- read.csv("hurricane.csv", header = TRUE)
+options(scipen=999)
+# Separate county data, sum projectAmount, federalShareObligated by disaster and county
+countyHurr <- fema %>% dplyr::filter(countyCode!=0)
+totalFund <- countyHurr %>% dplyr::group_by(disasterNumber, county, state, date) %>% dplyr::select(projectAmount, federalShareObligated, totalObligated) %>% summarise_each(funs(sum)) 
+
+# Separate statewide data, sum projectAmount, federalShareObligated by disaster and state
+stateHurr <- fema %>% dplyr::filter(countyCode==0)
+stateFund <- stateHurr %>% dplyr::group_by(disasterNumber, state, date) %>% dplyr::select(projectAmount, federalShareObligated, totalObligated) %>% summarise_each(funs(sum)) 
+
+
 ```
 
-## Including Plots
 
-
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+kable(head(totalFund)) %>% kableExtra::kable_classic()
+kable(head(stateFund)) %>% kable_classic()
 ```
 
+## prepare Hurricane track data
+
+
+## prepare map data
+```{r, echo=FALSE}
+## select states 
+StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
+
+MainStates <- map_data("county", StatesInt)
+
+# Hurrican Harvey Incident Period August 23, 2017 - September 15, 2017
+harvey <- countyHurr %>% dplyr:: filter((date >= "2017-08-23") & (date <= "2017-09-15"))
+
+# Hurricane Sandy : October 27, 2012 - November 8, 2012
+sandyFunds <- countyHurr %>% dplyr:: filter((date >= "2012-10-27") & (date <= "2012-11-08"))
+```
+
+### Make map plots
+```{r}
+Sandy <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")
+
+
+
+Sandy
+```
 
