@@ -14,10 +14,13 @@ library(magrittr)
 library(lubridate)
 library(hurricaneexposuredata)
 library(drat)
-library(conflicted)
+library(maps)
 
-filter <- dplyr::filter
+# Prepare map data
+StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
 
+MainStates <- map_data("county", StatesInt)
+states <- map_data("state", StatesInt)
 # prepare data for plots
 
 fema <- read.csv("hurricane.csv")
@@ -41,10 +44,6 @@ countyFund<- merge(MainStates,countyFund,by=c("region","subregion"))
 countyFund$year <- as.numeric(year(countyFund$date))
 stateFund$year <- as.numeric(year(stateFund$date))
 
-# Prepare map data
-StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
-
-MainStates <- map_data("county", StatesInt)
 
 # prepare state total plot data
 stateTotal <- stateFund %>% dplyr::group_by(region) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum))
@@ -115,12 +114,12 @@ server <- function(input, output) {
         if(input$state =="All" & input$year == "All"){
             filtered <- stateFund
         } else if (input$year == "All"){
-            filtered <- stateFund %>% filter(region == input$state)
+            filtered <- stateFund %>% dplyr::filter(region == input$state)
         } else if (input$state == "All"){
-            filtered <- stateFund %>% filter(year == input$year)
+            filtered <- stateFund %>% dplyr::filter(year == input$year)
         }
         else {
-            filtered <- stateFund %>% filter(region == input$state & year ==input$year )
+            filtered <- stateFund %>% dplyr::filter(region == input$state & year ==input$year )
         }
         filtered %<>% select(disaster, region, date, projectAmount, federalShare)
         names(filtered) = c("Disaster Number", "State", "Disaster Declaration Date", "Project Amount Total", "Federal Obligated Fund")
@@ -131,16 +130,17 @@ server <- function(input, output) {
         if(input$state =="All" & input$year == "All"){
             filtered <- countyFund
         } else if (input$year == "All"){
-            filtered <- countyFund %>% filter(region == input$state)
+            filtered <- countyFund %>% dplyr::filter(region == input$state)
         } else if (input$state == "All"){
-            filtered <- countyFund %>% filter(year == input$year)
+            filtered <- countyFund %>% dplyr::filter(year == input$year)
         }
         else {
-            filtered <- countyFund %>% filter(region == input$state & year ==input$year )
+            filtered <- countyFund %>% dplyr::filter(region == input$state & year ==input$year )
         }        
         p <- ggplot()+
             geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
-            geom_polygon(data=filtered, aes(x = long, y = lat, group = group, fill = projectAmount/federalShare))+
+            geom_polygon(data=filtered, aes(x = long, y = lat, group = group, 
+                                            fill = projectAmount/federalShare))+
             labs(fill="Proportion of Federal Obligated Funds") +
             ggtitle(paste("Porportion Federal Obligated Funds for Year", input$year,  "by County")) +
             theme(plot.title = element_text(hjust = 0.5))
@@ -159,8 +159,7 @@ server <- function(input, output) {
         
     } 
         else if (input$year == "All"){
-        filtered <- stateYear %>% filter(region == input$state)
-        filtered <- merge(filtered, MainStates, by = c("region"))
+        filtered <- stateTotal %>% dplyr::filter(region == input$state)
         p <- ggplot() + 
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
             geom_polygon(data=filtered, aes(x = long, y = lat, group = group, fill = projectAmount), color = "transparent")+
@@ -169,7 +168,7 @@ server <- function(input, output) {
             theme(plot.title = element_text(hjust = 0.5))
     } 
         else if (input$state == "All"){
-        filtered <- stateYear %>% filter(year == input$year)
+        filtered <- stateYear %>% dplyr::filter(year == input$year)
         filtered <- merge(filtered, MainStates, by = c("region"))
         p <- ggplot() + 
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
@@ -179,7 +178,7 @@ server <- function(input, output) {
             theme(plot.title = element_text(hjust = 0.5))
     }
     else {
-        filtered <- stateYear %>% filter(region == input$state & year == input$year)
+        filtered <- stateYear %>% dplyr::filter(region == input$state & year == input$year)
         filtered <- merge(filtered, MainStates, by = c("region"))
         p <- ggplot() + 
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
