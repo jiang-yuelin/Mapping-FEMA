@@ -23,8 +23,8 @@ head(rain)
 
 ```{r}
 ## filter target data
-TrackFloyd <- hurr_tracks %>% filter(storm_id=="Floyd-1999")
-TrackAllison <- hurr_tracks %>% filter(storm_id=="Allison-2001")
+TrackFloyd <- hurr_tracks %>% dplyr:: filter(storm_id=="Floyd-1999")
+TrackAllison <- hurr_tracks %>% dplyr:: filter(storm_id=="Allison-2001")
 ```
 
 ```{r message=FALSE, warning=FALSE}

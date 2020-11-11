@@ -13,4 +13,4 @@ hurricane$yyyy <- as.numeric(hurricane$yyyy)
 hurricane %<>% filter(yyyy > 2008)
 hurricane %<>% select(-c(mm, dd, time, incidentType))
 
-
+write.csv(hurricane, "hurricane.csv")
