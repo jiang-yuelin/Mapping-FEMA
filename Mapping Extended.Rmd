@@ -13,10 +13,6 @@ pacman::p_load("tidyverse",
                "hurricaneexposuredata",
                "drat",
                "maps",
-               "tmap",
-               "sf",
-               "viridis",
-               "sp",
                "kableExtra")
 ```
 
