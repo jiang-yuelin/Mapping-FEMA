@@ -40,7 +40,7 @@ stateFund <- stateHurr %>% dplyr::group_by(disaster, region, date) %>% dplyr::se
 
 
 ```{r}
-kable(head(countyFund)) %>% kableExtra::kable_classic()
+kable(head(countyFund)) %>% kableExtra::kable_material_dark()
 
 ```
 
@@ -53,6 +53,7 @@ kable(head(countyFund)) %>% kableExtra::kable_classic()
 StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
 
 MainStates <- map_data("county", StatesInt)
+states <- map_data("state", StatesInt)
 
 # Hurrican Harvey Incident Period August 23, 2017 - September 15, 2017
 harvey <- countyHurr %>% dplyr:: filter((date >= "2017-08-23") & (date <= "2017-09-15"))
@@ -98,5 +99,18 @@ kable(head(stateFund)) %>% kable_classic()
 
 ggplot(data = stateFund) +
   geom_point(aes(x = date, y = federalShare/projectAmount, color = region))
+
+stateTotal <- stateFund %>% dplyr::group_by(region) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum))
+stateTotal <- merge(stateTotal, MainStates, by = c("region"))
+
+
+statePlot <- ggplot() + 
+  geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
+  geom_polygon(data=stateTotal, aes(x = long, y = lat, group = group, fill = projectAmount), color = "transparent")+
+  labs(fill="Project Amount(USD)") + 
+  ggtitle("FEMA Project Amount by State from 2009-2020") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+statePlot
 ```
 
