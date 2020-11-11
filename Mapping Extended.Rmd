@@ -70,11 +70,9 @@ sandy <- merge(MainStates,sandy,by=c("region","subregion"))
 
 ### Make map plots of Hurricane Harvey's received federal funds by county
 ```{r}
-harveyS <- c("texas","louisiana","arkansas","missouri","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina")
-harveyStates <- map_data("county", harveyS)
 
 harveyPlot <- ggplot() + 
-  geom_polygon(data=harveyStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
   geom_polygon(data=harvey, aes(x = long, y = lat, group = group, fill = federalShare/projectAmount))+
   labs(fill="Federal Aid Amount (USD)") + 
   ggtitle("Harvey-2017") +
@@ -84,11 +82,8 @@ harveyPlot
 ```
 ### Make map plots of Hurricane Sandy's received federal funds by county
 ```{r}
-sandyS <- c("virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire", "maine" )
-sandyStates <- map_data("county", sandyS)
-
 sandyPlot <- ggplot() + 
-  geom_polygon(data=sandyStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
   geom_polygon(data=sandy, aes(x = long, y = lat, group = group, fill = federalShare/projectAmount), color = "transparent")+
   labs(fill="Federal Aid Amount (USD)") + 
   ggtitle("Sandy-2012") +
