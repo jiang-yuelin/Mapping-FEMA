@@ -27,24 +27,28 @@ pacman::p_load("tidyverse",
 
 fema <- read.csv("hurricane.csv", header = TRUE)
 options(scipen=999)
+fema$state <- tolower(fema$state)
+fema$county <- tolower(fema$county)
+fema %<>% dplyr::select(disasterNumber, date, state, county, projectAmount, federalShareObligated)
+names(fema) <- c("disaster", "date", "region", "subregion", "projectAmount", "federalShare")
 # Separate county data, sum projectAmount, federalShareObligated by disaster and county
-countyHurr <- fema %>% dplyr::filter(countyCode!=0)
-totalFund <- countyHurr %>% dplyr::group_by(disasterNumber, county, state, date) %>% dplyr::select(projectAmount, federalShareObligated, totalObligated) %>% summarise_each(funs(sum)) 
+countyHurr <- fema %>% dplyr::filter(subregion!= "statewide")
+countyFund <- countyHurr %>% dplyr::group_by(disaster, region, subregion, date) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum)) 
 
 # Separate statewide data, sum projectAmount, federalShareObligated by disaster and state
-stateHurr <- fema %>% dplyr::filter(countyCode==0)
-stateFund <- stateHurr %>% dplyr::group_by(disasterNumber, state, date) %>% dplyr::select(projectAmount, federalShareObligated, totalObligated) %>% summarise_each(funs(sum)) 
+stateHurr <- fema %>% dplyr::filter(subregion=="statewide")
+stateFund <- stateHurr %>% dplyr::group_by(disaster, region, date) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum)) 
 
 
 ```
 
 
 ```{r}
-kable(head(totalFund)) %>% kableExtra::kable_classic()
+kable(head(countyFund)) %>% kableExtra::kable_classic()
 kable(head(stateFund)) %>% kable_classic()
 ```
 
-## prepare Hurricane track data
+## prepare location
 
 
 ## prepare map data
@@ -61,13 +65,21 @@ harvey <- countyHurr %>% dplyr:: filter((date >= "2017-08-23") & (date <= "2017-
 sandyFunds <- countyHurr %>% dplyr:: filter((date >= "2012-10-27") & (date <= "2012-11-08"))
 ```
 
+```{r}
+# add locations on fund dataframe
+
+harvey <- merge(MainStates,harvey,by=c("region","subregion"))
+
+```
+
 ### Make map plots
 ```{r}
-Sandy <- ggplot() + 
-  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")
+harveyPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
+  geom_polygon(data=harvey, aes(x = long, y = lat, group = group, fill = federalShare), color = "transparent")
 
 
 
-Sandy
+harveyPlot
 ```
 
