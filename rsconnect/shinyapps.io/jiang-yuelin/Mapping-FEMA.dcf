@@ -5,8 +5,9 @@ account: jiang-yuelin
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3210939
-bundleId: 3848226
+bundleId: 3848270
 url: https://jiang-yuelin.shinyapps.io/Mapping-FEMA/
-when: 1605115224.58553
+when: 1605115903.32703
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: clear.R|Mapping Extended.Rmd|mapping project.Rmd|README.md

@@ -140,7 +140,7 @@ server <- function(input, output) {
         p <- ggplot()+
             geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),colour="black",fill="white")+
             geom_polygon(data=filtered, aes(x = long, y = lat, group = group, 
-                                            fill = projectAmount/federalShare))+
+                                            fill = federalShare/projectAmount))+
             labs(fill="Proportion of Federal Obligated Funds") +
             ggtitle(paste("Porportion Federal Obligated Funds for Year", input$year,  "by County")) +
             theme(plot.title = element_text(hjust = 0.5))
@@ -153,8 +153,8 @@ server <- function(input, output) {
         p <- ggplot() + 
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
             geom_polygon(data=stateTotal, aes(x = long, y = lat, group = group, fill = projectAmount), color = "transparent")+
-            labs(fill="Project Amount(USD)") + 
-            ggtitle("FEMA Project Amount by State from 2009-2020") +
+            labs(fill="Total Project Amount(USD)") + 
+            ggtitle("Total Project Amount by State from 2009-2020") +
             theme(plot.title = element_text(hjust = 0.5))
         
     } 
@@ -164,7 +164,7 @@ server <- function(input, output) {
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
             geom_polygon(data=filtered, aes(x = long, y = lat, group = group, fill = projectAmount), color = "transparent")+
             labs(fill="Total Project Amount(USD)") + 
-            ggtitle(paste(input$state, "FEMA Project Amount from 2009-2020") ) +
+            ggtitle(paste(input$state, "Total Project Amount by State from 2009-2020") ) +
             theme(plot.title = element_text(hjust = 0.5))
     } 
         else if (input$state == "All"){
@@ -173,8 +173,8 @@ server <- function(input, output) {
         p <- ggplot() + 
             geom_polygon(data=states, aes(x=long, y=lat, group=group),colour="black",fill="white")+
             geom_polygon(data=filtered, aes(x = long, y = lat, group = group, fill = projectAmount), color = "transparent")+
-            labs(fill="Project Amount(USD)") + 
-            ggtitle(paste("FEMA Project Amount", input$year) ) +
+            labs(fill="Total Project Amount(USD)") + 
+            ggtitle(paste("FEMA Project Amount for", input$year, "by State") ) +
             theme(plot.title = element_text(hjust = 0.5))
     }
     else {
