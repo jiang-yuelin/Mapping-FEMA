@@ -1,0 +1,164 @@
+---
+title: "Presentation"
+author: "Yuelin Jiang, Yuxi Wang"
+date: "2020/11/11"
+output: ioslides_presentation
+---
+```{r setup, include=FALSE}
+
+suppressPackageStartupMessages(
+  library(tidyverse))
+  library(magrittr)
+  library(hurricaneexposuredata)
+  library(drat)
+  library(maps)
+  library(kableExtra)
+  library(scales)
+  library(methods)
+  library(knitr)
+  library(kableExtra)
+  library(janeaustenr)
+  library(dplyr)
+  library(stringr)
+  library(gutenbergr)
+  library(scales)
+  
+  opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE,
+  cache = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  dpi = 300,
+  cache.lazy = FALSE,
+  tidy = "styler",
+  out.width = "90%",
+  fig.align = "center"
+)
+
+  options(crayon.enabled = FALSE)
+
+  theme_set(theme_light())
+
+```
+
+
+
+## Data Cleaning
+<div style="font-size:9pt; font-weight: bold">
+```{r, echo=FALSE, message=FALSE}
+fema <- read.csv("hurricane.csv", header = TRUE)
+options(scipen=999)
+fema$state <- tolower(fema$state)
+fema$county <- tolower(fema$county)
+fema %<>% dplyr::select(disasterNumber, date, state, county, projectAmount, federalShareObligated)
+names(fema) <- c("disaster", "date", "region", "subregion", "projectAmount", "federalShare")
+# Separate county data, sum projectAmount, federalShareObligated by disaster and county
+countyHurr <- fema %>% dplyr::filter(subregion!= "statewide")
+countyFund <- countyHurr %>% dplyr::group_by(disaster, region, subregion, date) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum)) 
+
+# Separate statewide data, sum projectAmount, federalShareObligated by disaster and state
+stateHurr <- fema %>% dplyr::filter(subregion=="statewide")
+stateFund <- stateHurr %>% dplyr::group_by(disaster, region, date) %>% dplyr::select(projectAmount, federalShare) %>% summarise_each(funs(sum)) 
+
+kable(head(countyFund)) %>% kableExtra::kable_classic()
+```
+</div>
+
+
+
+## prepare location & prepare map data
+<div style="font-size:9pt; font-weight: bold">
+```{r, echo=FALSE}
+## select states 
+StatesInt <- c("texas","oklahoma","kansas","louisiana","arkansas","missouri","iowa","wisconsin","michigan","illinois","indiana","ohio","kentucky","tennessee","alabama","mississippi","florida","georgia","south carolina","north carolina","virginia","west virginia","maryland","delaware","pennsylvania","new jersey","new york","connecticut","rhode island","massachusetts","vermont","new hampshire","maine")
+
+MainStates <- map_data("county", StatesInt)
+
+# Hurrican Harvey Incident Period August 23, 2017 - September 15, 2017
+harvey <- countyHurr %>% dplyr:: filter((date >= "2017-08-23") & (date <= "2017-09-15"))
+# Make cut
+harvey$cut <- cut(harvey$federalShare/harvey$projectAmount,breaks=c(0,0.25,0.50,0.75,1.00))
+
+# Hurricane Sandy : October 27, 2012 - November 8, 2012
+sandy <- countyHurr %>% dplyr:: filter((date >= "2012-10-27") & (date <= "2012-11-08"))
+# Make cut
+sandy$cut <- cut(sandy$federalShare/sandy$projectAmount,breaks=c(0,0.25,0.50,0.75,1.00))
+
+# Filter the track data
+data("hurr_tracks")
+Track_Harvey <- hurr_tracks %>% dplyr:: filter(storm_id=="Harvey-2017")
+head(Track_Harvey)
+Track_Sandy <- hurr_tracks %>% dplyr:: filter(storm_id=="Sandy-2012")
+head(Track_Sandy)
+# add locations on fund dataframe
+harvey <- merge(MainStates,harvey,by=c("region","subregion"))
+sandy <- merge(MainStates,sandy,by=c("region","subregion"))
+```
+</div>
+
+
+## The code for Making a map plot of Hurricane Harvey's received federal funds by county.
+<div style="font-size:12pt">
+```{r message=FALSE} 
+harveyPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),
+               colour="black",fill="white") + 
+  geom_polygon(data=harvey, aes(x = long, y = lat, group = group, 
+                                fill = cut)) + 
+  scale_fill_brewer(palette="Blues") + 
+  labs(fill="proportion of obligated fedral fund") + 
+  geom_path(data=Track_Harvey,aes(longitude, latitude),color="red") + 
+  ggtitle("Harvey-2017") + 
+  xlim(c(-110, -65)) + 
+  ylim(c(25, 50)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+</div>
+
+## Harvey Plot
+```{r}
+harveyPlot
+```
+</div>
+
+## The code of Making a map plot of Hurricane Sandy's received federal funds by county
+<div style="font-size:12pt">
+```{r message=FALSE}
+sandyPlot <- ggplot() + 
+  geom_polygon(data=MainStates, aes(x=long, y=lat, group=group),
+               colour="black",fill="white")+
+  geom_polygon(data=sandy, aes(x = long, y = lat, group = group,
+                               fill = cut))+
+  scale_fill_brewer(palette="yellows")+
+  geom_path(data=Track_Sandy, aes(longitude, latitude),color="red")+
+  labs(fill="proportion of obligated fedral fund") + 
+  ggtitle("Sandy-2012") +
+  xlim(c(-110, -65)) + 
+  ylim(c(25, 50)) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+</div>
+
+## The Sandy Plot
+```{r}
+sandyPlot
+```
+</div>
+
+## The total fund of each state
+```{r}
+kable(head(stateFund)) %>% kable_classic()
+```
+</div>
+
+## Plot total funds
+<div style="font-size:12pt">
+```{r message=FALSE}
+
+ggplot(data = stateFund) +
+  geom_point(aes(x = date, y = federalShare/projectAmount,
+                 color = region))
+```
+</div>
